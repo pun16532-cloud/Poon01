@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>แดชบอร์ด & ระบบติดตามผู้ใช้งาน - FITFLOW</title>
+  <meta name="description" content="แดชบอร์ดติดตามค่า TDEE สถิติน้ำหนัก บันทึกแคลอรีอาหาร และประวัติการออกกำลังกาย เชื่อมต่อ Supabase">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+
+  <!-- Chart.js & Supabase JS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Site Header Navigation -->
+  <header class="site-header">
+    <div class="container nav-content">
+      <a href="index.html" class="brand-logo">
+        <div class="brand-icon">⚡</div>
+        <span>FIT<span class="text-primary-color">FLOW</span> <small style="font-size: 0.7rem; font-weight: 500; color: var(--text-muted); margin-left: 4px;">DASHBOARD</small></span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="index.html" class="nav-link">หน้าแรก</a></li>
+          <li><a href="index.html#workout-catalog" class="nav-link">คลังท่าออกกำลัง</a></li>
+          <li><a href="dashboard.html" class="nav-link active">แดชบอร์ดติดตามผล</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <span class="db-status-pill" id="dash-cloud-status">
+          <span class="status-dot"></span> Checking DB...
+        </span>
+        <button class="btn btn-sm btn-outline btn-open-edit-profile" id="btn-header-profile">
+          👤 โปรไฟล์ / ปรับเป้าหมาย
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Dashboard Layout Container -->
+  <div class="dashboard-layout">
+
+    <!-- Sidebar Navigation -->
+    <aside class="dashboard-sidebar">
+      <div>
+        <!-- User Profile Card in Sidebar -->
+        <div class="sidebar-user-profile">
+          <div class="user-avatar" id="dash-user-avatar">U</div>
+          <div class="user-info">
+            <span class="user-name" id="dash-user-name">กำลังโหลด...</span>
+            <span class="user-status" id="dash-user-email">guest@fitflow.app</span>
+          </div>
+        </div>
+
+        <ul class="sidebar-menu">
+          <li>
+            <button class="sidebar-menu-btn active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+              <span>ภาพรวม (Overview)</span>
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-menu-btn btn-open-add-weight">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="m19 12-7 7-7-7"/></svg>
+              <span>บันทึกน้ำหนัก (+Weight)</span>
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-menu-btn btn-open-add-food">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span>บันทึกมื้ออาหาร (+Food)</span>
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-menu-btn btn-open-add-workout">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M4 9.5h16a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 1-1.5 1.5H4a1.5 1.5 0 0 1-1.5-1.5v-2A1.5 1.5 0 0 1 4 9.5z"/></svg>
+              <span>บันทึกการออกกำลังกาย</span>
+            </button>
+          </li>
+          <li>
+            <button class="sidebar-menu-btn btn-open-supabase-settings">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              <span>ตั้งค่า Supabase API</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-sm btn-secondary" id="btn-export-data" style="width: 100%;">
+          💾 ส่งออกข้อมูลสำรอง (JSON)
+        </button>
+        <button class="btn btn-sm btn-outline" id="btn-signout" style="width: 100%; border-color: rgba(244, 63, 94, 0.4); color: var(--accent-rose);">
+          ออกจากระบบ (Sign Out)
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Dashboard Area -->
+    <main class="dashboard-main">
+
+      <!-- Header Bar -->
+      <div class="dashboard-header-bar">
+        <div class="header-title-group">
+          <h1>แดชบอร์ดติดตามสุขภาพส่วนบุคคล</h1>
+          <p>สรุปสถิติประจำวัน การใช้พลังงาน TDEE และความก้าวหน้าสู่เป้าหมาย</p>
+        </div>
+
+        <div class="quick-actions-bar">
+          <button class="btn btn-sm btn-primary btn-open-add-food" id="quick-add-food-btn">
+            🍽️ + บันทึกอาหาร
+          </button>
+          <button class="btn btn-sm btn-secondary btn-open-add-workout" id="quick-add-wo-btn">
+            ⚡ + บันทึกออกกำลังกาย
+          </button>
+          <button class="btn btn-sm btn-outline btn-open-add-weight" id="quick-add-wt-btn">
+            ⚖️ + ชั่งน้ำหนัก
+          </button>
+        </div>
+      </div>
+
+      <!-- Key Metrics Row -->
+      <div class="metrics-grid">
+        <!-- Metric: TDEE -->
+        <div class="metric-card glass-card">
+          <div class="metric-header">
+            <span class="metric-title">TDEE พลังงานเผาผลาญ</span>
+            <div class="metric-icon-box">🔥</div>
+          </div>
+          <div class="metric-value-wrap">
+            <span class="metric-val" id="metric-tdee">--</span>
+            <span class="metric-unit">kcal/วัน</span>
+          </div>
+          <span class="metric-subtext">รวมกิจกรรมประจำวันแล้ว</span>
+        </div>
+
+        <!-- Metric: Calorie Goal -->
+        <div class="metric-card cyan glass-card">
+          <div class="metric-header">
+            <span class="metric-title">เป้าหมายแคลอรี (Target)</span>
+            <div class="metric-icon-box">🎯</div>
+          </div>
+          <div class="metric-value-wrap">
+            <span class="metric-val text-cyan" id="metric-target-calories">--</span>
+            <span class="metric-unit">kcal</span>
+          </div>
+          <span class="metric-subtext">คำนวณตามเป้าหมายสรีระ</span>
+        </div>
+
+        <!-- Metric: Current Weight -->
+        <div class="metric-card orange glass-card">
+          <div class="metric-header">
+            <span class="metric-title">น้ำหนักปัจจุบัน</span>
+            <div class="metric-icon-box">⚖️</div>
+          </div>
+          <div class="metric-value-wrap">
+            <span class="metric-val" id="metric-weight">--</span>
+            <span class="metric-unit">กก.</span>
+          </div>
+          <span class="metric-subtext">เป้าหมาย: <strong id="metric-target-weight">--</strong> กก.</span>
+        </div>
+
+        <!-- Metric: BMR & BMI -->
+        <div class="metric-card purple glass-card">
+          <div class="metric-header">
+            <span class="metric-title">BMR & ดัชนี BMI</span>
+            <div class="metric-icon-box">🧬</div>
+          </div>
+          <div class="metric-value-wrap">
+            <span class="metric-val" id="metric-bmr">--</span>
+            <span class="metric-unit">BMR (kcal)</span>
+          </div>
+          <span class="metric-subtext">BMI: <strong id="metric-bmi">--</strong> • <span id="metric-bmi-status">สมส่วน</span></span>
+        </div>
+      </div>
+
+      <!-- Calorie Balance & Macro Progress Card -->
+      <div class="calorie-overview-card glass-card">
+        <div class="card-header-actions" style="margin-bottom: 1.25rem;">
+          <div>
+            <h3>สมดุลพลังงานประจำวันนี้ (Today's Calorie Budget)</h3>
+            <p class="text-secondary" style="font-size: 0.85rem;">ติดตามแคลอรีที่บริโภคเข้าไป หักลบด้วยการออกกำลังกาย เทียบกับเป้าหมาย</p>
+          </div>
+          <span class="badge badge-primary">Daily Tracker</span>
+        </div>
+
+        <div class="calorie-split-layout">
+          <!-- Left: Calorie Gauge / Progress -->
+          <div class="calorie-gauge-wrap">
+            <div class="calorie-balance-numbers">
+              <div class="cal-stat-item">
+                <span class="label">เป้าหมาย</span>
+                <span class="num" id="cal-target-num">0</span>
+              </div>
+              <div style="font-size: 1.2rem; color: var(--text-muted);">-</div>
+              <div class="cal-stat-item">
+                <span class="label">ทานไปแล้ว</span>
+                <span class="num text-cyan" id="cal-consumed-num">0</span>
+              </div>
+              <div style="font-size: 1.2rem; color: var(--text-muted);">+</div>
+              <div class="cal-stat-item">
+                <span class="label">เบิร์นออก</span>
+                <span class="num text-orange" id="cal-burned-num">0</span>
+              </div>
+              <div style="font-size: 1.2rem; color: var(--text-muted);">=</div>
+              <div class="cal-stat-item highlight">
+                <span class="label">แคลอรีคงเหลือ</span>
+                <span class="num" id="cal-remaining-num">0</span>
+              </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div>
+              <div class="cal-progress-bar-bg">
+                <div class="cal-progress-fill" id="cal-progress-fill"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem;">
+                <span>0 kcal</span>
+                <span>แคลอรีเกินจะเปลี่ยนเป็นสีส้ม/แดง</span>
+                <span>100% Target</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Macronutrient Progress Bars -->
+          <div class="macro-bars-list">
+            <div class="macro-item">
+              <div class="macro-header">
+                <span>🥩 โปรตีน (Protein)</span>
+                <span id="macro-protein-val">0g / 0g</span>
+              </div>
+              <div class="macro-bar-mini">
+                <div class="macro-bar-mini-fill macro-fill-protein" id="macro-protein-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="macro-item">
+              <div class="macro-header">
+                <span>🍚 คาร์โบไฮเดรต (Carbohydrates)</span>
+                <span id="macro-carbs-val">0g / 0g</span>
+              </div>
+              <div class="macro-bar-mini">
+                <div class="macro-bar-mini-fill macro-fill-carbs" id="macro-carbs-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <div class="macro-item">
+              <div class="macro-header">
+                <span>🥑 ไขมันดี (Healthy Fats)</span>
+                <span id="macro-fat-val">0g / 0g</span>
+              </div>
+              <div class="macro-bar-mini">
+                <div class="macro-bar-mini-fill macro-fill-fat" id="macro-fat-bar" style="width: 0%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Two Column Layout: Weight Chart & Food Logs -->
+      <div class="dash-content-grid">
+        
+        <!-- Left: Weight Trend Line Chart -->
+        <div class="chart-card glass-card">
+          <div class="card-header-actions">
+            <div>
+              <h3>กราฟติดตามแนวโน้มน้ำหนักตัว (Weight Trend)</h3>
+              <p class="text-secondary" style="font-size: 0.85rem;">เปรียบเทียบน้ำหนักจริงกับเส้นเป้าหมาย Target</p>
+            </div>
+            <button class="btn btn-sm btn-outline btn-open-add-weight">+ ชั่งน้ำหนัก</button>
+          </div>
+
+          <div class="chart-container-box">
+            <canvas id="weightTrendChart"></canvas>
+          </div>
+
+          <div style="margin-top: 0.5rem;">
+            <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem; color: var(--text-muted);">ประวัติการชั่งน้ำหนักล่าสุด:</h4>
+            <div class="logs-items-scroll" id="weight-history-list" style="max-height: 180px;">
+              <!-- Populated by js/dashboard.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Daily Food & Workout Activity Tabs -->
+        <div class="logs-list-card glass-card">
+          <div class="card-header-actions">
+            <div>
+              <h3>รายการอาหารวันนี้</h3>
+              <p class="text-secondary" style="font-size: 0.85rem;">บันทึกเมนูและแคลอรีที่รับประทาน</p>
+            </div>
+            <button class="btn btn-sm btn-primary btn-open-add-food">+ เพิ่มอาหาร</button>
+          </div>
+
+          <div class="logs-items-scroll" id="food-logs-list">
+            <!-- Populated by js/dashboard.js -->
+          </div>
+
+          <!-- Workout summary section inside logs -->
+          <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-glass);">
+            <div class="card-header-actions" style="margin-bottom: 0.75rem;">
+              <h4 style="font-size: 0.95rem;">กิจกรรมการออกกำลังกายวันนี้</h4>
+              <button class="btn btn-sm btn-secondary btn-open-add-workout">+ เพิ่มกิจกรรม</button>
+            </div>
+            <div class="logs-items-scroll" id="workout-logs-list" style="max-height: 180px;">
+              <!-- Populated by js/dashboard.js -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav">
+    <div class="mobile-nav-items">
+      <a href="index.html" class="mobile-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>หน้าแรก</span>
+      </a>
+      <a href="javascript:void(0)" class="mobile-nav-link btn-open-add-food">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <span>+ อาหาร</span>
+      </a>
+      <a href="javascript:void(0)" class="mobile-nav-link btn-open-add-weight">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="m19 12-7 7-7-7"/></svg>
+        <span>+ น้ำหนัก</span>
+      </a>
+      <a href="dashboard.html" class="mobile-nav-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+        <span>แดชบอร์ด</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS -->
+  <!-- ========================================================================= -->
+
+  <!-- Modal 1: Add Weight -->
+  <div class="modal-backdrop" id="modal-add-weight">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>⚖️ บันทึกน้ำหนักตัว</h3>
+        <button class="btn-icon btn-close-modal">✕</button>
+      </div>
+      <form id="form-add-weight">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="input-weight-val">น้ำหนักตัว (กิโลกรัม)</label>
+            <input type="number" step="0.1" id="input-weight-val" class="form-input" placeholder="70.5" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-weight-date">วันที่ชั่งน้ำหนัก</label>
+            <input type="date" id="input-weight-date" class="form-input" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-weight-notes">บันทึกเพิ่มเติม (ไม่บังคับ)</label>
+            <input type="text" id="input-weight-notes" class="form-input" placeholder="ชั่งตอนเช้าหลังตื่นนอน ดื่มน้ำ 1 แก้ว">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกน้ำหนัก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 2: Add Food -->
+  <div class="modal-backdrop" id="modal-add-food">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>🍽️ บันทึกรายการอาหาร</h3>
+        <button class="btn-icon btn-close-modal">✕</button>
+      </div>
+      <form id="form-add-food">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="input-food-name">ชื่อเมนูอาหาร / เครื่องดื่ม</label>
+            <input type="text" id="input-food-name" class="form-input" placeholder="สเต๊กอกไก่ย่าง + สลัดผัก" required>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="input-food-calories">พลังงาน (kcal)</label>
+              <input type="number" id="input-food-calories" class="form-input" placeholder="350" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-food-meal">มื้ออาหาร</label>
+              <select id="input-food-meal" class="form-select">
+                <option value="breakfast">มื้อเช้า (Breakfast)</option>
+                <option value="lunch" selected>มื้อกลางวัน (Lunch)</option>
+                <option value="dinner">มื้อเย็น (Dinner)</option>
+                <option value="snack">ของว่าง / เวย์โปรตีน (Snack)</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="input-food-protein">โปรตีน (g)</label>
+              <input type="number" id="input-food-protein" class="form-input" placeholder="30">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-food-carbs">คาร์บ (g)</label>
+              <input type="number" id="input-food-carbs" class="form-input" placeholder="25">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-food-fat">ไขมัน (g)</label>
+              <input type="number" id="input-food-fat" class="form-input" placeholder="8">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกมื้ออาหาร</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Add Workout -->
+  <div class="modal-backdrop" id="modal-add-workout">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>⚡ บันทึกการออกกำลังกาย</h3>
+        <button class="btn-icon btn-close-modal">✕</button>
+      </div>
+      <form id="form-add-workout">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="input-wo-name">ชื่อกิจกรรม / โปรแกรมฝึก</label>
+            <input type="text" id="input-wo-name" class="form-input" placeholder="วิ่งจ็อกกิ้งรอบสวนสาธารณะ / เวทเทรนนิ่งขา" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-wo-type">ประเภทกิจกรรม</label>
+            <select id="input-wo-type" class="form-select">
+              <option value="Weight Training">เวทเทรนนิ่ง (Weight Training)</option>
+              <option value="Cardio & Running">วิ่ง / คาร์ดิโอ (Cardio)</option>
+              <option value="HIIT Tabata">HIIT / ทาบาตะ</option>
+              <option value="Swimming">ว่ายน้ำ (Swimming)</option>
+              <option value="Cycling">ปั่นจักรยาน (Cycling)</option>
+              <option value="Yoga & Mobility">โยคะ & ยืดเหยียด</option>
+              <option value="Bodyweight">บอดี้เวทที่บ้าน (Home Workout)</option>
+            </select>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="input-wo-duration">ระยะเวลา (นาที)</label>
+              <input type="number" id="input-wo-duration" class="form-input" placeholder="45" value="30" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="input-wo-calories">พลังงานที่เผาผลาญ (kcal)</label>
+              <input type="number" id="input-wo-calories" class="form-input" placeholder="250" value="200" required>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกกิจกรรม</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Edit Profile & Goals -->
+  <div class="modal-backdrop" id="modal-edit-profile">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>👤 แก้ไขโปรไฟล์และเป้าหมาย TDEE</h3>
+        <button class="btn-icon btn-close-modal">✕</button>
+      </div>
+      <form id="form-edit-profile">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="edit-user-fullname">ชื่อผู้ใช้งาน</label>
+            <input type="text" id="edit-user-fullname" class="form-input" required>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="edit-user-gender">เพศ</label>
+              <select id="edit-user-gender" class="form-select">
+                <option value="male">เพศชาย</option>
+                <option value="female">เพศหญิง</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-user-age">อายุ (ปี)</label>
+              <input type="number" id="edit-user-age" class="form-input" required>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label" for="edit-user-height">ส่วนสูง (ซม.)</label>
+              <input type="number" id="edit-user-height" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-user-weight">น้ำหนัก (กก.)</label>
+              <input type="number" step="0.1" id="edit-user-weight" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="edit-user-target-weight">เป้าหมาย (กก.)</label>
+              <input type="number" step="0.1" id="edit-user-target-weight" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-user-activity">ระดับกิจกรรม</label>
+            <select id="edit-user-activity" class="form-select">
+              <option value="sedentary">ไม่ออกกำลังกาย / นั่งทำงานเป็นหลัก (x1.2)</option>
+              <option value="light">ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์ (x1.375)</option>
+              <option value="moderate">ออกกำลังกายปานกลาง 3-5 วัน/สัปดาห์ (x1.55)</option>
+              <option value="active">ออกกำลังกายหนัก 6-7 วัน/สัปดาห์ (x1.725)</option>
+              <option value="extreme">ออกกำลังกายหนักมาก / นักกีฬา (x1.9)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="edit-user-goal">เป้าหมายด้านสรีระ</label>
+            <select id="edit-user-goal" class="form-select">
+              <option value="lose_normal">ลดไขมัน / ลดน้ำหนักแบบกระชับ (-18%)</option>
+              <option value="lose_fast">ลดน้ำหนักแบบเร่งด่วน (-25%)</option>
+              <option value="maintain">รักษาน้ำหนัก / รักษากล้ามเนื้อ (Maintenance)</option>
+              <option value="gain_lean">เพิ่มกล้ามเนื้อแบบลีน (Lean Bulk +10%)</option>
+              <option value="gain_heavy">เพิ่มมวลกล้ามเนื้อและน้ำหนัก (Heavy Bulk +20%)</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-close-modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">บันทึกและคำนวณ TDEE ใหม่</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 5: Supabase Settings inside Dashboard -->
+  <div class="modal-backdrop" id="modal-supabase-settings">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>⚙️ ตั้งค่า Supabase Database & Auth</h3>
+        <button class="btn-icon btn-close-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="dash-supabase-url">Supabase Project URL</label>
+          <input type="text" id="dash-supabase-url" class="form-input" placeholder="https://xyz.supabase.co">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="dash-supabase-key">Supabase Anon Key</label>
+          <input type="password" id="dash-supabase-key" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        </div>
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
+          <strong>💡 เคล็ดลับ:</strong> คุณสามารถสร้าง Project ฟรีบน <a href="https://supabase.com" target="_blank" style="color: var(--primary);">supabase.com</a> แล้วนำคำสั่ง SQL ในไฟล์ <code>supabase/schema.sql</code> ไปกดรันใน SQL Editor เพื่อสร้างตารางทั้งหมดโดยอัตโนมัติ!
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-close-modal">ปิด</button>
+        <button type="button" class="btn btn-primary" id="btn-dash-save-supabase">เชื่อมต่อ Supabase</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Main Dashboard Scripts -->
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

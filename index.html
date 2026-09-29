@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FITFLOW - ระบบคำนวณค่า TDEE วิทยาศาสตร์การออกกำลังกาย และติดตามสุขภาพ</title>
+  <meta name="description" content="คำนวณค่า TDEE และ BMR อย่างแม่นยำ พร้อมโปรแกรมออกกำลังกาย บันทึกสถิติน้ำหนัก แคลอรี และติดตามเป้าหมายสุขภาพ เชื่อมต่อฐานข้อมูล Supabase และรองรับทุกอุปกรณ์">
+  <meta name="keywords" content="คำนวณ TDEE, BMR, ลดน้ำหนัก, เพิ่มกล้ามเนื้อ, ออกกำลังกาย, Fitness Tracker, Vercel, Supabase">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/landing.css">
+
+  <!-- Supabase JS CDN (v2) -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <!-- Site Header Navigation -->
+  <header class="site-header">
+    <div class="container nav-content">
+      <a href="index.html" class="brand-logo" id="header-brand-logo">
+        <div class="brand-icon">⚡</div>
+        <span>FIT<span class="text-primary-color">FLOW</span></span>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="#quick-calc" class="nav-link">คำนวณ TDEE</a></li>
+          <li><a href="#workout-catalog" class="nav-link">คลังท่าออกกำลังกาย</a></li>
+          <li><a href="#features" class="nav-link">ฟีเจอร์ระบบ</a></li>
+          <li><a href="#nutrition-faq" class="nav-link">โภชนาการ & คำถาม</a></li>
+          <li><a href="dashboard.html" class="nav-link text-cyan">📊 แดชบอร์ดติดตามผล</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn btn-sm btn-secondary btn-open-supabase-modal" id="btn-header-supabase" title="ตั้งค่าการเชื่อมต่อ Supabase">
+          ⚙️ <span class="db-status-text">Supabase Config</span>
+        </button>
+        <a href="dashboard.html" class="btn btn-sm btn-primary btn-auth-trigger" id="btn-header-dashboard">
+          เข้าสู่แดชบอร์ด
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Hero Section -->
+  <main>
+    <section class="hero-section" id="hero">
+      <div class="hero-glow-1"></div>
+      <div class="hero-glow-2"></div>
+      
+      <div class="container hero-grid">
+        <!-- Hero Content -->
+        <div class="hero-content">
+          <div class="hero-tagline">
+            <span>🔥</span> ระบบคำนวณพลังงานมาตรฐานสากล Mifflin-St Jeor
+          </div>
+          <h1 class="hero-title">
+            เปลี่ยนสรีระด้วย <br>
+            <span class="text-gradient">วิทยาศาสตร์พลังงาน</span> <br>
+            และระบบติดตามผล
+          </h1>
+          <p class="hero-description">
+            รู้ค่า <strong>TDEE & BMR</strong> ของคุณอย่างแม่นยำ วางแผนสัดส่วนสารอาหาร (Macros) บันทึกอาหารรายวัน พร้อมระบบกราฟติดตามน้ำหนักและการออกกำลังกาย เชื่อมต่อข้อมูลปลอดภัยบนคลาวด์ <strong>Supabase</strong>
+          </p>
+
+          <div class="hero-cta">
+            <a href="#quick-calc" class="btn btn-lg btn-primary" id="hero-btn-start">
+              ⚡ คำนวณ TDEE ของคุณทันที
+            </a>
+            <a href="dashboard.html" class="btn btn-lg btn-secondary" id="hero-btn-demo">
+              📊 เปิดแดชบอร์ดทดลองใช้
+            </a>
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat-item">
+              <span class="stat-value text-gradient">99.4%</span>
+              <span class="stat-label">ความแม่นยำสูตรคำนวณ</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value text-gradient">100%</span>
+              <span class="stat-label">รองรับทุกอุปกรณ์ & Responsive</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value text-gradient">Cloud</span>
+              <span class="stat-label">Supabase Database & Vercel</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero Quick Calculator Card -->
+        <div class="hero-calculator-card glass-card" id="quick-calc">
+          <div class="card-title-group">
+            <div class="badge badge-primary" style="margin-bottom: 0.5rem;">Interactive Calculator</div>
+            <h3>เครื่องคำนวณพลังงาน TDEE & BMR</h3>
+            <p>กรอกข้อมูลเบื้องต้นเพื่อประเมินการเผาผลาญประจำวัน</p>
+          </div>
+
+          <form id="quick-tdee-form">
+            <!-- Gender Selector -->
+            <div class="form-group">
+              <label class="form-label">เพศสรีรวิทยา</label>
+              <div class="pill-group" id="calc-gender-group">
+                <div class="pill-option active" data-value="male">👨 เพศชาย</div>
+                <div class="pill-option" data-value="female">👩 เพศหญิง</div>
+              </div>
+            </div>
+
+            <!-- Age, Height, Weight Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem;">
+              <div class="form-group">
+                <label class="form-label" for="calc-age">อายุ (ปี)</label>
+                <input type="number" id="calc-age" class="form-input" value="26" min="10" max="100" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="calc-height">ส่วนสูง (ซม.)</label>
+                <input type="number" id="calc-height" class="form-input" value="175" min="80" max="250" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="calc-weight">น้ำหนัก (กก.)</label>
+                <input type="number" id="calc-weight" class="form-input" value="70" step="0.1" min="20" max="300" required>
+              </div>
+            </div>
+
+            <!-- Activity Level -->
+            <div class="form-group">
+              <label class="form-label" for="calc-activity">ระดับกิจกรรมในชีวิตประจำวัน</label>
+              <select id="calc-activity" class="form-select">
+                <option value="sedentary">ไม่ออกกำลังกาย / นั่งทำงานเป็นหลัก (x1.2)</option>
+                <option value="light">ออกกำลังกายเบาๆ 1-3 วัน/สัปดาห์ (x1.375)</option>
+                <option value="moderate" selected>ออกกำลังกายปานกลาง 3-5 วัน/สัปดาห์ (x1.55)</option>
+                <option value="active">ออกกำลังกายหนัก 6-7 วัน/สัปดาห์ (x1.725)</option>
+                <option value="extreme">ออกกำลังกายหนักมาก / นักกีฬาซ้อม 2 ครั้ง/วัน (x1.9)</option>
+              </select>
+            </div>
+
+            <!-- Target Goal -->
+            <div class="form-group">
+              <label class="form-label" for="calc-goal">เป้าหมายของคุณ</label>
+              <select id="calc-goal" class="form-select">
+                <option value="lose_normal" selected>ลดไขมัน / ลดน้ำหนักแบบยั่งยืน (-18%)</option>
+                <option value="lose_fast">ลดน้ำหนักแบบเร่งด่วน (-25%)</option>
+                <option value="maintain">รักษาน้ำหนักและรักษากล้ามเนื้อ (Maintenance)</option>
+                <option value="gain_lean">เพิ่มกล้ามเนื้อแบบลีน (Lean Bulk +10%)</option>
+                <option value="gain_heavy">เพิ่มมวลกล้ามเนื้อและน้ำหนัก (Heavy Bulk +20%)</option>
+              </select>
+            </div>
+
+            <!-- Real-time Result Box -->
+            <div class="quick-result-box" id="quick-calc-result">
+              <div class="result-main">
+                <div>
+                  <span class="text-muted" style="font-size: 0.8rem; text-transform: uppercase;">ค่า TDEE ของคุณ</span>
+                  <div class="result-number"><span id="result-tdee-val">2,240</span> <span style="color: var(--text-muted);">kcal/วัน</span></div>
+                </div>
+                <div style="text-align: right;">
+                  <span class="badge badge-primary">เป้าหมายพลังงาน</span>
+                  <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-cyan);" id="result-target-cal">1,837 kcal</div>
+                </div>
+              </div>
+
+              <div class="result-grid-mini">
+                <div class="mini-col">
+                  <span>BMR (พลังงานพื้นฐาน)</span>
+                  <span id="result-bmr-val">1,650 kcal</span>
+                </div>
+                <div class="mini-col">
+                  <span>BMI (ดัชนีมวลกาย)</span>
+                  <span id="result-bmi-val">22.9 (สมส่วน)</span>
+                </div>
+                <div class="mini-col">
+                  <span>สูตรที่ใช้</span>
+                  <span>Mifflin-St Jeor</span>
+                </div>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-primary" id="btn-save-to-dashboard" style="width: 100%; margin-top: 1.25rem;">
+              บันทึกผลและไปยังแดชบอร์ดติดตามผู้ใช้ ➔
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workout & Exercise Catalog Section -->
+    <section class="workout-section" id="workout-catalog">
+      <div class="container">
+        <div class="section-header">
+          <span class="badge badge-cyan">Exercise Library</span>
+          <h2>คลังท่าออกกำลังกายและโปรแกรมฝึก</h2>
+          <p>เลือกหมวดหมู่ที่เหมาะสมกับเป้าหมาย พร้อมเทคนิคการฝึกที่ถูกต้องเพื่อประสิทธิภาพในการเผาผลาญและการสร้างกล้ามเนื้อ</p>
+        </div>
+
+        <!-- Filter Pills -->
+        <div class="filter-pills">
+          <button class="filter-btn active" data-category="all">ทั้งหมด (All)</button>
+          <button class="filter-btn" data-category="strength">💪 เวทเทรนนิ่ง (Strength)</button>
+          <button class="filter-btn" data-category="cardio">🔥 คาร์ดิโอ & HIIT</button>
+          <button class="filter-btn" data-category="home">🏠 ออกกำลังกายที่บ้าน (Home)</button>
+          <button class="filter-btn" data-category="flexibility">🧘 ยืดเหยียด & โยคะ (Mobility)</button>
+        </div>
+
+        <!-- Cards Grid -->
+        <div class="workout-cards-grid" id="workout-grid-container">
+          <!-- Populated by js/app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- System Features Section -->
+    <section class="features-section" id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="badge badge-primary">Comprehensive Features</span>
+          <h2>ระบบติดตามผู้ใช้งานอัจฉริยะ (FITFLOW Hub)</h2>
+          <p>เครื่องมือที่จะช่วยให้คุณไม่หลุดจากเป้าหมายสุขภาพ ทั้งการควบคุมพลังงาน สารอาหาร และบันทึกการออกกำลังกาย</p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-box glass-card glass-card-interactive">
+            <div class="feature-icon-wrapper">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="m12 6 4 6h-8l4-6z"/>
+              </svg>
+            </div>
+            <h4>สูตรคำนวณมาตรฐานสากล</h4>
+            <p>รองรับทั้งสูตร Mifflin-St Jeor และ Harris-Benedict ปรับแต่งสัดส่วนสารอาหาร Macronutrients โปรตีน คาร์โบไฮเดรต และไขมัน ตามน้ำหนักตัวจริง</p>
+          </div>
+
+          <div class="feature-box glass-card glass-card-interactive">
+            <div class="feature-icon-wrapper cyan">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>
+              </svg>
+            </div>
+            <h4>กราฟแนวโน้มน้ำหนัก (Weight Trend)</h4>
+            <p>แสดงผลความคืบหน้าน้ำหนักตัวด้วย Chart.js แบบ Interactive เปรียบเทียบกับเส้นเป้าหมาย Target Weight อย่างชัดเจน</p>
+          </div>
+
+          <div class="feature-box glass-card glass-card-interactive">
+            <div class="feature-icon-wrapper orange">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              </svg>
+            </div>
+            <h4>บันทึกอาหาร & Calorie Balance</h4>
+            <p>บันทึกมื้ออาหารในแต่ละวัน คำนวณพลังงานที่เหลือเทียบกับ TDEE Target พร้อมแจ้งเตือนเมื่อแคลอรีเกินเกณฑ์</p>
+          </div>
+
+          <div class="feature-box glass-card glass-card-interactive">
+            <div class="feature-icon-wrapper purple">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+              </svg>
+            </div>
+            <h4>Supabase Cloud & Vercel Ready</h4>
+            <p>เชื่อมต่อระบบฐานข้อมูล Postgres และระบบ Authentication จาก Supabase พร้อม Deploy ขึ้น Vercel ได้ทันที มีระบบ Offline Fallback ในตัว</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Nutrition Knowledge & FAQ Section -->
+    <section class="nutrition-section" id="nutrition-faq">
+      <div class="container">
+        <div class="section-header">
+          <span class="badge badge-orange">Knowledge & FAQ</span>
+          <h2>สาระความรู้โภชนาการ และคำถามที่พบบ่อย</h2>
+          <p>เข้าใจหลักการทำงานของแคลอรีและการเผาผลาญ เพื่อผลลัพธ์ที่ยั่งยืนและไม่เกิดโยโย่เอฟเฟกต์</p>
+        </div>
+
+        <div class="faq-accordion">
+          <div class="faq-item glass-card active">
+            <button class="faq-question">
+              <span>TDEE กับ BMR แตกต่างกันอย่างไร?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              <strong>BMR (Basal Metabolic Rate)</strong> คือ อัตราการเผาผลาญพลังงานขั้นต่ำที่ร่างกายต้องการเพื่อรักษาชีวิต เช่น การเต้นของหัวใจ การหายใจ และการทำงานของสมอง ขณะนอนนิ่งๆ<br><br>
+              <strong>TDEE (Total Daily Energy Expenditure)</strong> คือ พลังงานทั้งหมดที่ร่างกายใช้ในแต่ละวัน โดยคำนวณจาก BMR นำไปคูณกับระดับกิจกรรมในชีวิตประจำวันและการออกกำลังกาย (TDEE = BMR x Activity Multiplier) หากต้องการลดน้ำหนัก ต้องรับประทานอาหารให้น้อยกว่าค่า TDEE
+            </div>
+          </div>
+
+          <div class="faq-item glass-card">
+            <button class="faq-question">
+              <span>ลดน้ำหนักควรกินน้อยกว่า TDEE เท่าไหร่ถึงจะปลอดภัย?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              ตามหลักเวชศาสตร์การกีฬา แนะนำให้ทำ <strong>Caloric Deficit อยู่ที่ 15% - 20% ของค่า TDEE</strong> (ประมาณ 300 - 500 kcal ต่อวัน) ซึ่งจะทำให้น้ำหนักลดลงประมาณ 0.5 - 0.7 กิโลกรัมต่อสัปดาห์ การกินน้อยกว่า BMR นานๆ อาจทำให้ร่างกายเข้าสู่โหมดประหยัดพลังงาน (Adaptive Thermogenesis) สูญเสียมวลกล้ามเนื้อ และเกิดโยโย่เอฟเฟกต์ได้ง่าย
+            </div>
+          </div>
+
+          <div class="faq-item glass-card">
+            <button class="faq-question">
+              <span>ต้องการเพิ่มกล้ามเนื้อ (Bulk) ต้องกินแคลอรีอย่างไร?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              สำหรับการสร้างกล้ามเนื้อแบบ Lean Bulk แนะนำให้รับประทานพลังงานเกินค่า TDEE เล็กน้อยประมาณ <strong>+10% ถึง +15% (ประมาณ 250 - 350 kcal)</strong> ควบคู่ไปกับการบริโภคโปรตีนอย่างน้อย 1.8 - 2.2 กรัมต่อน้ำหนักตัว 1 กิโลกรัม และการฝึกเวทเทรนนิ่งแบบ Progressive Overload อย่างสม่ำเสมอ
+            </div>
+          </div>
+
+          <div class="faq-item glass-card">
+            <button class="faq-question">
+              <span>ระบบจัดเก็บข้อมูลอย่างไร และปลอดภัยแค่ไหน?</span>
+              <span class="faq-icon">▼</span>
+            </button>
+            <div class="faq-answer">
+              FITFLOW ออกแบบให้รองรับทั้ง <strong>Supabase Cloud Database</strong> ผ่านมาตรฐานความปลอดภัย Row Level Security (RLS) ทำให้ผู้ใช้แต่ละคนสามารถเข้าถึงได้เฉพาะข้อมูลของตนเองเท่านั้น และยังมีระบบ <strong>Local Cache Fallback</strong> สำหรับการทดลองใช้งานบนเครื่องโดยไม่ต้องล็อกอิน
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom CTA Banner -->
+    <div class="container">
+      <div class="cta-banner">
+        <h2>พร้อมเริ่มต้นติดตามสุขภาพของคุณหรือยัง?</h2>
+        <p>เริ่มต้นคำนวณ บันทึกน้ำหนัก มื้ออาหาร และการออกกำลังกายได้ฟรีทันที รองรับการเปิดใช้งานบนสมาร์ตโฟนและคอมพิวเตอร์</p>
+        <a href="dashboard.html" class="btn btn-lg btn-primary">
+          เข้าสู่หน้าแดชบอร์ด FITFLOW ➔
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <div class="brand-logo" style="margin-bottom: 0.75rem;">
+            <div class="brand-icon">⚡</div>
+            <span>FIT<span class="text-primary-color">FLOW</span></span>
+          </div>
+          <p class="text-secondary" style="font-size: 0.9rem; line-height: 1.6;">
+            แพลตฟอร์มวิทยาศาสตร์การออกกำลังกาย ระบบคำนวณ TDEE/BMR และบันทึกสุขภาพส่วนบุคคล พร้อมเชื่อมต่อฐานข้อมูล Supabase และ Vercel Deployment
+          </p>
+          <div style="margin-top: 1rem;">
+            <span class="db-status-pill supabase-status-indicator">
+              <span class="status-dot"></span> Checking DB Status...
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <h4 style="margin-bottom: 1rem;">เมนูหลัก</h4>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+            <li><a href="#quick-calc" class="nav-link">คำนวณ TDEE</a></li>
+            <li><a href="#workout-catalog" class="nav-link">คลังท่าฝึก</a></li>
+            <li><a href="#features" class="nav-link">ฟีเจอร์</a></li>
+            <li><a href="dashboard.html" class="nav-link">แดชบอร์ด</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 style="margin-bottom: 1rem;">เครื่องมือ</h4>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.9rem;">
+            <li><a href="#" class="nav-link btn-open-supabase-modal">ตั้งค่า Supabase</a></li>
+            <li><a href="#" class="nav-link btn-open-auth-modal">เข้าสู่ระบบ / สมัครสมาชิก</a></li>
+            <li><a href="https://vercel.com" target="_blank" class="nav-link">Deploy บน Vercel</a></li>
+            <li><a href="https://supabase.com" target="_blank" class="nav-link">Supabase Cloud</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 style="margin-bottom: 1rem;">เทคโนโลยี</h4>
+          <p class="text-secondary" style="font-size: 0.85rem; line-height: 1.6;">
+            สร้างด้วย HTML5, Vanilla Modern CSS, JavaScript ES Modules, Chart.js, Supabase JS Client และพร้อมรันบน Vercel Edge Platform
+          </p>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>© 2026 FITFLOW. ออกแบบและพัฒนาเพื่อสุขภาพที่ดีของคุณ</div>
+        <div>Responsive All Devices • Supabase & Vercel Ready</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-bottom-nav">
+    <div class="mobile-nav-items">
+      <a href="index.html" class="mobile-nav-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>หน้าแรก</span>
+      </a>
+      <a href="#quick-calc" class="mobile-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>
+        <span>คำนวณ TDEE</span>
+      </a>
+      <a href="#workout-catalog" class="mobile-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M4 9.5h16a1.5 1.5 0 0 1 1.5 1.5v2a1.5 1.5 0 0 1-1.5 1.5H4a1.5 1.5 0 0 1-1.5-1.5v-2A1.5 1.5 0 0 1 4 9.5z"/></svg>
+        <span>ท่าออกกำลัง</span>
+      </a>
+      <a href="dashboard.html" class="mobile-nav-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        <span>แดชบอร์ด</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- Workout Detail Modal -->
+  <div class="modal-backdrop" id="workout-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-workout-title">ชื่อท่าออกกำลังกาย</h3>
+          <span class="text-muted" id="modal-workout-eng" style="font-size: 0.85rem;">English Name</span>
+        </div>
+        <button class="btn-icon btn-close-modal" onclick="document.getElementById('workout-modal').classList.remove('active')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="width: 100%; height: 220px; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 1.25rem; border: 1px solid var(--border-glass);">
+          <img id="modal-workout-img" src="" alt="" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+          <div class="metric-card" style="flex: 1; padding: 0.75rem 1rem;">
+            <span class="metric-title">ระยะเวลา</span>
+            <div class="metric-val" style="font-size: 1.2rem;" id="modal-workout-duration">-</div>
+          </div>
+          <div class="metric-card orange" style="flex: 1; padding: 0.75rem 1rem;">
+            <span class="metric-title">เผาผลาญ</span>
+            <div class="metric-val" style="font-size: 1.2rem;" id="modal-workout-calories">-</div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 1rem;">
+          <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 0.3rem;">🎯 กล้ามเนื้อเป้าหมาย:</h4>
+          <p id="modal-workout-target" style="font-size: 0.9rem; color: var(--text-secondary);"></p>
+        </div>
+
+        <div style="margin-bottom: 1.25rem;">
+          <h4 style="font-size: 0.95rem; margin-bottom: 0.5rem;">📋 ขั้นตอนการฝึกที่ถูกต้อง:</h4>
+          <ol id="modal-workout-steps" style="padding-left: 1.25rem; font-size: 0.9rem; line-height: 1.7; color: var(--text-secondary);"></ol>
+        </div>
+
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.85rem; border-radius: var(--radius-md);">
+          <strong style="font-size: 0.85rem; color: var(--primary);">💡 ข้อแนะนำ: </strong>
+          <span id="modal-workout-tips" style="font-size: 0.85rem; color: var(--text-secondary);"></span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-close-modal" onclick="document.getElementById('workout-modal').classList.remove('active')">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase Settings Modal -->
+  <div class="modal-backdrop" id="supabase-config-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3>ตั้งค่าเชื่อมต่อ Supabase Database</h3>
+          <p class="text-secondary" style="font-size: 0.8rem;">เชื่อมต่อเพื่อซิงก์ข้อมูลผู้ใช้บนคลาวด์ หรือใช้งานในโหมด Local Offline</p>
+        </div>
+        <button class="btn-icon" id="btn-close-supabase-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label" for="supabase-url-input">Supabase Project URL</label>
+          <input type="text" id="supabase-url-input" class="form-input" placeholder="https://xyzcompany.supabase.co">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="supabase-anon-key-input">Supabase Anon Public Key</label>
+          <input type="password" id="supabase-anon-key-input" class="form-input" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
+        </div>
+        <div style="background: rgba(6, 182, 212, 0.08); border: 1px solid rgba(6, 182, 212, 0.2); padding: 0.85rem; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
+          <strong>📌 วิธีรับ Key:</strong> เข้าสู่ Supabase Dashboard ➔ Project Settings ➔ API ➔ คัดลอก Project URL และ anon public key มาวาง
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-clear-supabase-config">ใช้ Demo Mode (ล้างคีย์)</button>
+        <button type="button" class="btn btn-primary" id="btn-save-supabase-config">บันทึกการเชื่อมต่อ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal (Sign In / Sign Up) -->
+  <div class="modal-backdrop" id="auth-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <h3 id="auth-modal-title">ระบบสมาชิก FITFLOW</h3>
+          <p class="text-secondary" style="font-size: 0.8rem;">เข้าสู่ระบบเพื่อบันทึกข้อมูลส่วนบุคคลของคุณ</p>
+        </div>
+        <button class="btn-icon" id="btn-close-auth-modal">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="pill-group" style="margin-bottom: 1.25rem;">
+          <div class="pill-option active" id="tab-auth-signin">เข้าสู่ระบบ (Sign In)</div>
+          <div class="pill-option" id="tab-auth-signup">สมัครสมาชิก (Sign Up)</div>
+        </div>
+
+        <div class="form-group" id="auth-name-group" style="display: none;">
+          <label class="form-label" for="auth-name">ชื่อ-นามสกุล / ชื่อเล่น</label>
+          <input type="text" id="auth-name" class="form-input" placeholder="สมชาย สุขภาพดี">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="auth-email">อีเมล (Email)</label>
+          <input type="email" id="auth-email" class="form-input" placeholder="user@example.com" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="auth-pass">รหัสผ่าน (Password)</label>
+          <input type="password" id="auth-pass" class="form-input" placeholder="••••••••" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-auth-submit" style="width: 100%;">
+          เข้าสู่ระบบ (Sign In)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Main Application Scripts -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
